@@ -2,6 +2,7 @@
 #include "iothub_client.h"
 #include "parson.h"
 #include "string.h"
+#include "azure_c_shared_utility/string_token.h"
 #include "iotsecurity/utils.h"
 #include "iotsecurity/message_schema_consts.h"
 #include "iotsecurity/collector.h"
@@ -31,6 +32,8 @@ MU_DEFINE_ENUM_STRINGS(NETID_RESULT, NETID_RESULT_VALUES);
 */
 static const char* NETWORK_COMMAND = "ss --no-header --tcp --udp --numeric --options --processes";
 static const char* NETWORK_COMMAND_SS_FORMAT = "%s\t%s\t%d\t%d\t%s\t%s\t%s\n";
+
+static const char* PORT_DELIMITER =  ":";
 
 static STRING_HANDLE MACHINE_ID = NULL;
 
@@ -195,6 +198,40 @@ CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
             if (json_status != JSONSuccess) {
                 goto cleanup;
             }
+
+            // split TCP and UDP addresses from ip:port into two parts
+            char *token, *address;
+
+            // local address properties
+            address = strdup(localAddress);
+            if ((token = strsep(&address, PORT_DELIMITER)) != NULL) {
+                json_status = json_object_set_string(record_object, LISTENING_PORTS_LOCAL_ADDRESS_KEY, token);
+                if (json_status != JSONSuccess) {
+                    goto cleanup;
+                }
+            }
+            if ((token = strsep(&address, PORT_DELIMITER)) != NULL) {
+                json_status = json_object_set_string(record_object, LISTENING_PORTS_LOCAL_PORT_KEY, token);
+                if (json_status != JSONSuccess) {
+                    goto cleanup;
+                }
+            }
+
+            // peer address properties
+            address = strdup(peerAddress);
+            if ((token = strsep(&address, PORT_DELIMITER)) != NULL) {
+                json_status = json_object_set_string(record_object, LISTENING_PORTS_REMOTE_ADDRESS_KEY, token);
+                if (json_status != JSONSuccess) {
+                    goto cleanup;
+                }
+            }
+            if ((token = strsep(&address, PORT_DELIMITER)) != NULL) {
+                json_status = json_object_set_string(record_object, LISTENING_PORTS_REMOTE_PORT_KEY, token);
+                if (json_status != JSONSuccess) {
+                    goto cleanup;
+                }
+            }
+
             break;
         case NETID_RAW:
         case NETID_U_DGR:
@@ -205,22 +242,6 @@ CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
         default:
             collector_result = COLLECTOR_NOT_SUPPORTED_EXCEPTION;
             goto cleanup;
-    }
-
-    /*
-    * TODO LISTENING_PORTS_LOCAL_ADDRESS_KEY, LISTENING_PORTS_LOCAL_PORT_KEY
-    */
-    json_status = json_object_set_string(record_object, "Local Address:Port", localAddress);
-    if (json_status != JSONSuccess) {
-        goto cleanup;
-    }
-
-    /*
-    * TODO LISTENING_PORTS_REMOTE_ADDRESS_KEY, LISTENING_PORTS_REMOTE_PORT_KEY
-    */
-    json_status = json_object_set_string(record_object, "Peer Address:Port", peerAddress);
-    if (json_status != JSONSuccess) {
-        goto cleanup;
     }
 
     json_status = json_object_set_string(record_object, "State", state);
