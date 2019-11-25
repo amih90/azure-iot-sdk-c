@@ -33,9 +33,25 @@ MU_DEFINE_ENUM_STRINGS(NETID_RESULT, NETID_RESULT_VALUES);
 static const char* NETWORK_COMMAND = "ss --no-header --tcp --udp --numeric --options --processes";
 static const char* NETWORK_COMMAND_SS_FORMAT = "%s\t%s\t%d\t%d\t%s\t%s\t%s\n";
 
+static const char* NETWORK_SCHEMA_EXTRA_DETAILS_STATE_KEY = "State";
+static const char* NETWORK_SCHEMA_EXTRA_DETAILS_RECV_Q_KEY = "Recv-Q";
+static const char* NETWORK_SCHEMA_EXTRA_DETAILS_SEND_Q_KEY = "Send-Q";
+static const char* NETWORK_SCHEMA_EXTRA_DETAILS_METADATA_KEY = "Metadata";
+
 static const char* PORT_DELIMITER =  ":";
 
 static STRING_HANDLE MACHINE_ID = NULL;
+
+typedef struct NETWORK_HANDLE_DATA_TAG
+{
+    char netid[13];
+    char state[RECORD_PROPERTY_MAX_LENGTH_STATE];
+    unsigned int recvQ;
+    unsigned int sendQ;
+    char localAddress[RECORD_PROPERTY_MAX_LENGTH_LOCAL_ADDRESS];
+    char peerAddress[RECORD_PROPERTY_MAX_LENGTH_PEER_ADDRESS];
+    char metadata[RECORD_PROPERTY_MAX_LENGTH_METADATA];
+} NETWORK_HANDLE_DATA;
 
 
 CollectorResult CollectorNetwork(JSON_Object *root);
@@ -170,16 +186,9 @@ CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
     CollectorResult collector_result = COLLECTOR_OK;
     JSON_Status json_status = JSONSuccess;
 
-    // TODO make it struct
-    char netid[13] = { 0 };
-    char state[RECORD_PROPERTY_MAX_LENGTH_STATE] = { 0 };
-    unsigned int recvQ;
-    unsigned int sendQ;
-    char localAddress[RECORD_PROPERTY_MAX_LENGTH_LOCAL_ADDRESS] = { 0 };
-    char peerAddress[RECORD_PROPERTY_MAX_LENGTH_PEER_ADDRESS] = { 0 };
-    char metadata[RECORD_PROPERTY_MAX_LENGTH_METADATA] = { 0 };
+    NETWORK_HANDLE_DATA* record = malloc(sizeof(NETWORK_HANDLE_DATA));
 
-    int scanCols = sscanf(line, NETWORK_COMMAND_SS_FORMAT, netid, state, &recvQ, &sendQ, localAddress, peerAddress, metadata);
+    int scanCols = sscanf(line, NETWORK_COMMAND_SS_FORMAT, record->netid, record->state, &(record->recvQ), &(record->sendQ), record->localAddress, record->peerAddress, record->metadata);
     if (scanCols < COMMAND_SS_MIN_SCAN_COLS) {
         collector_result = COLLECTOR_PARSE_EXCEPTION;
         goto cleanup;
@@ -194,16 +203,16 @@ CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
     {
         case NETID_TCP:
         case NETID_UDP:
-            json_status = json_object_set_string(record_object, LISTENING_PORTS_PROTOCOL_KEY, netid);
+            json_status = json_object_set_string(record_object, LISTENING_PORTS_PROTOCOL_KEY, record->netid);
             if (json_status != JSONSuccess) {
                 goto cleanup;
             }
 
             // split TCP and UDP addresses from ip:port into two parts
-            char *token, *address;
+            char *address, *token;
 
             // local address properties
-            address = strdup(localAddress);
+            address = strdup(record->localAddress);
             if ((token = strsep(&address, PORT_DELIMITER)) != NULL) {
                 json_status = json_object_set_string(record_object, LISTENING_PORTS_LOCAL_ADDRESS_KEY, token);
                 if (json_status != JSONSuccess) {
@@ -216,9 +225,11 @@ CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
                     goto cleanup;
                 }
             }
+            free(address);
+            address = NULL;
 
             // peer address properties
-            address = strdup(peerAddress);
+            address = strdup(record->peerAddress);
             if ((token = strsep(&address, PORT_DELIMITER)) != NULL) {
                 json_status = json_object_set_string(record_object, LISTENING_PORTS_REMOTE_ADDRESS_KEY, token);
                 if (json_status != JSONSuccess) {
@@ -230,7 +241,11 @@ CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
                 if (json_status != JSONSuccess) {
                     goto cleanup;
                 }
+
+
             }
+            free(address);
+            address = NULL;
 
             break;
         case NETID_RAW:
@@ -244,22 +259,31 @@ CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
             goto cleanup;
     }
 
-    json_status = json_object_set_string(record_object, "State", state);
+    JSON_Value *extra_details_value = json_value_init_object();
+    JSON_Object *extra_details_object = json_value_get_object(extra_details_value);
+
+    // populate Extra Details properties
+    json_status = json_object_set_string(extra_details_object, NETWORK_SCHEMA_EXTRA_DETAILS_STATE_KEY, record->state);
     if (json_status != JSONSuccess) {
         goto cleanup;
     }
 
-    json_status = json_object_set_number(record_object, "Recv-Q", recvQ);
+    json_status = json_object_set_number(extra_details_object, NETWORK_SCHEMA_EXTRA_DETAILS_RECV_Q_KEY, record->recvQ);
     if (json_status != JSONSuccess) {
         goto cleanup;
     }
 
-    json_status = json_object_set_number(record_object, "Send-Q", sendQ);
+    json_status = json_object_set_number(extra_details_object, NETWORK_SCHEMA_EXTRA_DETAILS_SEND_Q_KEY, record->sendQ);
     if (json_status != JSONSuccess) {
         goto cleanup;
     }
 
-    json_status = json_object_set_string(record_object, "Metadata", metadata);
+    json_status = json_object_set_string(extra_details_object, NETWORK_SCHEMA_EXTRA_DETAILS_METADATA_KEY, record->metadata);
+    if (json_status != JSONSuccess) {
+        goto cleanup;
+    }
+
+    json_status = json_object_set_value(record_object, EXTRA_DETAILS_KEY, extra_details_value);
     if (json_status != JSONSuccess) {
         goto cleanup;
     }
@@ -275,7 +299,8 @@ cleanup:
     }
 
     if (collector_result != COLLECTOR_OK) {
-        // TODO free
+        free(record);
+        record = NULL;
     }
 
     return collector_result;

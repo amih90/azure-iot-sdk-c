@@ -60,7 +60,7 @@ multithreaded API is that the calls to DoWork are abstracted away from your code
 #endif // SET_TRUSTED_CERT_IN_SAMPLES
 
 /* Paste in your device connection string  */
-static const char* connectionString = "[device connection string]";
+static const char* connectionString = "HostName=amhollan-iot-hub-dev.azure-devices.net;DeviceId=sdk;SharedAccessKey=VhM+g/DLdcfgSN8/C2Xg5fZ2veuOt0J/Y6uFSg+FStA="; // FIXME "[device connection string]";
 
 static bool g_continueRunning = true;
 int g_interval = 10000;  // 10 sec send interval initially
@@ -198,154 +198,146 @@ static void send_confirm_callback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void
 
 int main(void)
 {
-//     IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol;
+    IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol;
 
-//     IOTHUB_MESSAGE_HANDLE message_handle;
-//     float telemetry_temperature;
-//     float telemetry_humidity;
-//     const char* telemetry_scale = "Celcius";
-//     char telemetry_msg_buffer[80];
+    IOTHUB_MESSAGE_HANDLE message_handle;
+    JSON_Value *root_value;
+    JSON_Object *root_object;
 
-//     int messagecount = 0;
+    int messagecount = 0;
 
-//     printf("\r\nThis sample will send messages continuously and accept C2D messages.\r\nPress Ctrl+C to terminate the sample.\r\n\r\n");
+    printf("\r\nThis sample will send messages continuously and accept C2D messages.\r\nPress Ctrl+C to terminate the sample.\r\n\r\n");
 
-//     // Select the Protocol to use with the connection
-// #ifdef SAMPLE_MQTT
-//     protocol = MQTT_Protocol;
-// #endif // SAMPLE_MQTT
-// #ifdef SAMPLE_MQTT_OVER_WEBSOCKETS
-//     protocol = MQTT_WebSocket_Protocol;
-// #endif // SAMPLE_MQTT_OVER_WEBSOCKETS
-// #ifdef SAMPLE_AMQP
-//     protocol = AMQP_Protocol;
-// #endif // SAMPLE_AMQP
-// #ifdef SAMPLE_AMQP_OVER_WEBSOCKETS
-//     protocol = AMQP_Protocol_over_WebSocketsTls;
-// #endif // SAMPLE_AMQP_OVER_WEBSOCKETS
-// #ifdef SAMPLE_HTTP
-//     protocol = HTTP_Protocol;
-// #endif // SAMPLE_HTTP
+    // Select the Protocol to use with the connection
+#ifdef SAMPLE_MQTT
+    protocol = MQTT_Protocol;
+#endif // SAMPLE_MQTT
+#ifdef SAMPLE_MQTT_OVER_WEBSOCKETS
+    protocol = MQTT_WebSocket_Protocol;
+#endif // SAMPLE_MQTT_OVER_WEBSOCKETS
+#ifdef SAMPLE_AMQP
+    protocol = AMQP_Protocol;
+#endif // SAMPLE_AMQP
+#ifdef SAMPLE_AMQP_OVER_WEBSOCKETS
+    protocol = AMQP_Protocol_over_WebSocketsTls;
+#endif // SAMPLE_AMQP_OVER_WEBSOCKETS
+#ifdef SAMPLE_HTTP
+    protocol = HTTP_Protocol;
+#endif // SAMPLE_HTTP
 
-//     IOTHUB_DEVICE_CLIENT_HANDLE device_handle;
+    IOTHUB_DEVICE_CLIENT_HANDLE device_handle;
 
-//     // Used to initialize IoTHub SDK subsystem
-//     (void)IoTHub_Init();
+    // Used to initialize IoTHub SDK subsystem
+    (void)IoTHub_Init();
 
-//     (void)printf("Creating IoTHub handle\r\n");
-//     // Create the iothub handle here
-//     device_handle = IoTHubDeviceClient_CreateFromConnectionString(connectionString, protocol);
-//     if (device_handle == NULL)
-//     {
-//         (void)printf("Failure creating Iothub device.  Hint: Check you connection string.\r\n");
-//     }
-//     else
-//     {
-//         if (proxy_host)
-//         {
-//             HTTP_PROXY_OPTIONS http_proxy_options = { 0 };
-//             http_proxy_options.host_address = proxy_host;
-//             http_proxy_options.port = proxy_port;
-//             http_proxy_options.username = proxy_username;
-//             http_proxy_options.password = proxy_password;
-
-//             if (IoTHubDeviceClient_SetOption(device_handle, OPTION_HTTP_PROXY, &http_proxy_options) != IOTHUB_CLIENT_OK)
-//             {
-//                 (void)printf("failure to set proxy\n");
-//             }
-//         }
-
-//         // Setting message callback to get C2D messages
-//         (void)IoTHubDeviceClient_SetMessageCallback(device_handle, receive_msg_callback, NULL);
-//         // Setting method callback to handle a SetTelemetryInterval method to control
-//         //   how often telemetry messages are sent from the simulated device.
-//         (void)IoTHubDeviceClient_SetDeviceMethodCallback(device_handle, device_method_callback, NULL);
-//         // Setting connection status callback to get indication of connection to iothub
-//         (void)IoTHubDeviceClient_SetConnectionStatusCallback(device_handle, connection_status_callback, NULL);
-
-//         // Set any option that are necessary.
-//         // For available options please see the iothub_sdk_options.md documentation
-
-//         // Setting Log Tracing.
-//         // Log tracing is supported in MQTT and AMQP. Not HTTP.
-// #ifndef SAMPLE_HTTP
-//         bool traceOn = true;
-//         (void)IoTHubDeviceClient_SetOption(device_handle, OPTION_LOG_TRACE, &traceOn);
-// #endif
-
-//         // Setting the frequency of DoWork calls by the underlying process thread.
-//         // The value ms_delay is a delay between DoWork calls, in milliseconds.
-//         // ms_delay can only be between 1 and 100 milliseconds.
-//         // Without the SetOption, the delay defaults to 1 ms.
-//         tickcounter_ms_t ms_delay = 10;
-//         (void)IoTHubDeviceClient_SetOption(device_handle, OPTION_DO_WORK_FREQUENCY_IN_MS, &ms_delay);
-
-// #ifdef SET_TRUSTED_CERT_IN_SAMPLES
-//         // Setting the Trusted Certificate.  This is only necessary on system with without
-//         // built in certificate stores.
-//         (void)IoTHubDeviceClient_SetOption(device_handle, OPTION_TRUSTED_CERT, certificates);
-// #endif // SET_TRUSTED_CERT_IN_SAMPLES
-
-// #if defined SAMPLE_MQTT || defined SAMPLE_MQTT_OVER_WEBSOCKETS
-//         //Setting the auto URL Encoder (recommended for MQTT). Please use this option unless
-//         //you are URL Encoding inputs yourself.
-//         //ONLY valid for use with MQTT
-//         //bool urlEncodeOn = true;
-//         //(void)IoTHubDeviceClient_SetOption(device_handle, OPTION_AUTO_URL_ENCODE_DECODE, &urlEncodeOn);
-// #endif
-
-//         while(g_continueRunning)
-//         {
-//             // Construct the iothub message
-//             telemetry_temperature = 20.0f + ((float)rand() / RAND_MAX) * 15.0f;
-//             telemetry_humidity = 60.0f + ((float)rand() / RAND_MAX) * 20.0f;
-
-//             sprintf(telemetry_msg_buffer, "{\"temperature\":%.3f,\"humidity\":%.3f,\"scale\":\"%s\"}",
-//                 telemetry_temperature, telemetry_humidity, telemetry_scale);
-
-//             message_handle = IoTHubMessage_CreateFromString(telemetry_msg_buffer);
-
-//             // Set Message property
-//             (void)IoTHubMessage_SetMessageId(message_handle, "MSG_ID");
-//             (void)IoTHubMessage_SetCorrelationId(message_handle, "CORE_ID");
-//             (void)IoTHubMessage_SetContentTypeSystemProperty(message_handle, "application%2fjson");
-//             (void)IoTHubMessage_SetContentEncodingSystemProperty(message_handle, "utf-8");
-
-//             // Add custom properties to message
-//             (void)IoTHubMessage_SetProperty(message_handle, "property_key", "property_value");
-
-//             (void)printf("\r\nSending message %d to IoTHub\r\nMessage: %s\r\n", (int)(messagecount + 1), telemetry_msg_buffer);
-//             IoTHubDeviceClient_SendEventAsync(device_handle, message_handle, send_confirm_callback, NULL);
-
-//             // The message is copied to the sdk so the we can destroy it
-//             IoTHubMessage_Destroy(message_handle);
-//             messagecount = messagecount + 1;
-
-//             ThreadAPI_Sleep(g_interval);
-//         }
-
-//         // Clean up the iothub sdk handle
-//         IoTHubDeviceClient_Destroy(device_handle);
-//     }
-//     // Free all the sdk subsystem
-//     IoTHub_Deinit();
-
-
-    JSON_Value *root_value = json_value_init_object();
-    JSON_Object *root_object = json_value_get_object(root_value);
-
-    CollectorResult result = CollectorNetwork(root_object);
-    if (result != COLLECTOR_OK) {
-        (void)printf("failure to collect network events\n");
-    } else {
-        char *serialized_string = NULL;
-
-        serialized_string = json_serialize_to_string_pretty(root_value);
-        puts(serialized_string);
-        json_free_serialized_string(serialized_string);
+    (void)printf("Creating IoTHub handle\r\n");
+    // Create the iothub handle here
+    device_handle = IoTHubDeviceClient_CreateFromConnectionString(connectionString, protocol);
+    if (device_handle == NULL)
+    {
+        (void)printf("Failure creating Iothub device.  Hint: Check you connection string.\r\n");
     }
+    else
+    {
+        if (proxy_host)
+        {
+            HTTP_PROXY_OPTIONS http_proxy_options = { 0 };
+            http_proxy_options.host_address = proxy_host;
+            http_proxy_options.port = proxy_port;
+            http_proxy_options.username = proxy_username;
+            http_proxy_options.password = proxy_password;
 
-    json_value_free(root_value);
+            if (IoTHubDeviceClient_SetOption(device_handle, OPTION_HTTP_PROXY, &http_proxy_options) != IOTHUB_CLIENT_OK)
+            {
+                (void)printf("failure to set proxy\n");
+            }
+        }
+
+        // Setting message callback to get C2D messages
+        (void)IoTHubDeviceClient_SetMessageCallback(device_handle, receive_msg_callback, NULL);
+        // Setting method callback to handle a SetTelemetryInterval method to control
+        //   how often telemetry messages are sent from the simulated device.
+        (void)IoTHubDeviceClient_SetDeviceMethodCallback(device_handle, device_method_callback, NULL);
+        // Setting connection status callback to get indication of connection to iothub
+        (void)IoTHubDeviceClient_SetConnectionStatusCallback(device_handle, connection_status_callback, NULL);
+
+        // Set any option that are necessary.
+        // For available options please see the iothub_sdk_options.md documentation
+
+        // Setting Log Tracing.
+        // Log tracing is supported in MQTT and AMQP. Not HTTP.
+#ifndef SAMPLE_HTTP
+        bool traceOn = true;
+        (void)IoTHubDeviceClient_SetOption(device_handle, OPTION_LOG_TRACE, &traceOn);
+#endif
+
+        // Setting the frequency of DoWork calls by the underlying process thread.
+        // The value ms_delay is a delay between DoWork calls, in milliseconds.
+        // ms_delay can only be between 1 and 100 milliseconds.
+        // Without the SetOption, the delay defaults to 1 ms.
+        tickcounter_ms_t ms_delay = 10;
+        (void)IoTHubDeviceClient_SetOption(device_handle, OPTION_DO_WORK_FREQUENCY_IN_MS, &ms_delay);
+
+#ifdef SET_TRUSTED_CERT_IN_SAMPLES
+        // Setting the Trusted Certificate.  This is only necessary on system with without
+        // built in certificate stores.
+        (void)IoTHubDeviceClient_SetOption(device_handle, OPTION_TRUSTED_CERT, certificates);
+#endif // SET_TRUSTED_CERT_IN_SAMPLES
+
+#if defined SAMPLE_MQTT || defined SAMPLE_MQTT_OVER_WEBSOCKETS
+        //Setting the auto URL Encoder (recommended for MQTT). Please use this option unless
+        //you are URL Encoding inputs yourself.
+        //ONLY valid for use with MQTT
+        //bool urlEncodeOn = true;
+        //(void)IoTHubDeviceClient_SetOption(device_handle, OPTION_AUTO_URL_ENCODE_DECODE, &urlEncodeOn);
+#endif
+
+        while(g_continueRunning)
+        {
+            // Construct the security message message
+            root_value = json_value_init_object();
+            root_object = json_value_get_object(root_value);
+
+            CollectorResult result = CollectorNetwork(root_object);
+            if (result != COLLECTOR_OK) {
+                (void)printf("failure to collect network events\n");
+            } else {
+                char *serialized_string = NULL;
+
+                serialized_string = json_serialize_to_string_pretty(root_value);
+
+                message_handle = IoTHubMessage_CreateFromString(serialized_string);
+
+                // Set Message property
+                // (void)IoTHubMessage_SetAsSecurityMessage(message_handle);
+                (void)IoTHubMessage_SetMessageId(message_handle, "MSG_ID");
+                (void)IoTHubMessage_SetCorrelationId(message_handle, "CORE_ID");
+                (void)IoTHubMessage_SetContentTypeSystemProperty(message_handle, "application%2fjson");
+                (void)IoTHubMessage_SetContentEncodingSystemProperty(message_handle, "utf-8");
+
+                // Add custom properties to message
+                (void)IoTHubMessage_SetProperty(message_handle, "property_key", "property_value");
+
+                (void)printf("\r\nSending message %d to IoTHub\r\nMessage: %s\r\n", (int)(messagecount + 1), serialized_string);
+                IoTHubDeviceClient_SendEventAsync(device_handle, message_handle, send_confirm_callback, NULL);
+
+                // The message is copied to the sdk so the we can destroy it
+                IoTHubMessage_Destroy(message_handle);
+                messagecount = messagecount + 1;
+
+                json_free_serialized_string(serialized_string);
+            }
+
+            json_value_free(root_value);
+
+            ThreadAPI_Sleep(g_interval);
+        }
+
+        // Clean up the iothub sdk handle
+        IoTHubDeviceClient_Destroy(device_handle);
+    }
+    // Free all the sdk subsystem
+    IoTHub_Deinit();
 
     return 0;
 }
