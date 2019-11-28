@@ -295,13 +295,30 @@ int main(void)
         while(g_continueRunning)
         {
             // Construct the security message message
+            JSON_Status json_status = JSONSuccess;
+
             root_value = json_value_init_object();
             root_object = json_value_get_object(root_value);
 
-            CollectorResult result = CollectorNetwork(root_object);
+            // Message_v1_0
+            json_status |= json_object_set_string(root_object, "AgentVersion", "0.0.5");
+            json_status |= json_object_set_string(root_object, "AgentId", "54ce5c1b6b3146cfb8b99af899ae8717");
+            json_status |= json_object_set_string(root_object, "MessageSchemaVersion", "1.0");
+
+            JSON_Value *events_value = json_value_init_array();
+            JSON_Array *events_object = json_value_get_array(events_value);
+
+            json_status |= json_object_set_value(root_object, "Events", events_value);
+
+            JSON_Value* event_value = json_value_init_object();
+            JSON_Object* event_object = json_value_get_object(event_value);
+
+            CollectorResult result = CollectorNetwork_Collect(event_object);
             if (result != COLLECTOR_OK) {
                 (void)printf("failure to collect network events\n");
             } else {
+                json_status |= json_array_append_value(events_object, event_value);
+
                 char *serialized_string = NULL;
 
                 serialized_string = json_serialize_to_string_pretty(root_value);
@@ -309,7 +326,7 @@ int main(void)
                 message_handle = IoTHubMessage_CreateFromString(serialized_string);
 
                 // Set Message property
-                // (void)IoTHubMessage_SetAsSecurityMessage(message_handle);
+                (void)IoTHubMessage_SetAsSecurityMessage(message_handle);
                 (void)IoTHubMessage_SetMessageId(message_handle, "MSG_ID");
                 (void)IoTHubMessage_SetCorrelationId(message_handle, "CORE_ID");
                 (void)IoTHubMessage_SetContentTypeSystemProperty(message_handle, "application%2fjson");

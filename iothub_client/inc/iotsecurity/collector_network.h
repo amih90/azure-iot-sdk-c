@@ -25,7 +25,7 @@ extern "C"
 
     MU_DEFINE_ENUM(NETID_RESULT, NETID_RESULT_VALUES)
 
-MOCKABLE_FUNCTION(, CollectorResult, CollectorNetwork, JSON_Object, *root);
+MOCKABLE_FUNCTION(, CollectorResult, CollectorNetwork_Collect, JSON_Object, *root);
 
 #ifdef __cplusplus
 }

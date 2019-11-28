@@ -8,6 +8,10 @@
 #include "iotsecurity/collector.h"
 #include "iotsecurity/collector_network.h"
 
+// TODO add logs
+// #include "azure_c_shared_utility/xlogging.h"
+// #define LOG_ERROR_RESULT LogError("result = %s", MU_ENUM_TO_STRING(IOTHUB_CLIENT_RESULT, result));
+
 #define COMMAND_SS_MIN_SCAN_COLS 5
 
 #define RECORD_VALUE_MAX_LENGTH 512
@@ -54,14 +58,14 @@ typedef struct NETWORK_HANDLE_DATA_TAG
 } NETWORK_HANDLE_DATA;
 
 
-CollectorResult CollectorNetwork(JSON_Object *root);
+CollectorResult CollectorNetwork_Collect(JSON_Object *root);
 
 CollectorResult CollectorNetwork_AddMetadata(JSON_Object *root);
 
 CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line);
 
 
-CollectorResult CollectorNetwork(JSON_Object *root) {
+CollectorResult CollectorNetwork_Collect(JSON_Object *root) {
     CollectorResult collector_result = COLLECTOR_OK;
     JSON_Status json_status = JSONSuccess;
 
@@ -187,6 +191,10 @@ CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
     JSON_Status json_status = JSONSuccess;
 
     NETWORK_HANDLE_DATA* record = malloc(sizeof(NETWORK_HANDLE_DATA));
+    if (record == NULL) {
+        collector_result = COLLECTOR_MEMORY_EXCEPTION;
+        goto cleanup;
+    }
 
     int scanCols = sscanf(line, NETWORK_COMMAND_SS_FORMAT, record->netid, record->state, &(record->recvQ), &(record->sendQ), record->localAddress, record->peerAddress, record->metadata);
     if (scanCols < COMMAND_SS_MIN_SCAN_COLS) {
@@ -198,7 +206,7 @@ CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
     JSON_Object *record_object = json_value_get_object(record_value);
 
     NETID_RESULT netid_result;
-    MU_STRING_TO_ENUM("NETID_TCP", NETID_RESULT, &netid_result);
+    MU_STRING_TO_ENUM("NETID_TCP", NETID_RESULT, &netid_result); // FIX
     switch (netid_result)
     {
         case NETID_TCP:
@@ -298,7 +306,7 @@ cleanup:
         collector_result = COLLECTOR_EXCEPTION;
     }
 
-    if (collector_result != COLLECTOR_OK) {
+    if (record != NULL) {
         free(record);
         record = NULL;
     }
