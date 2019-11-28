@@ -2,6 +2,7 @@
 #include "iothub_client.h"
 #include "parson.h"
 #include "string.h"
+#include "azure_c_shared_utility/gb_time.h"
 #include "azure_c_shared_utility/string_token.h"
 #include "iotsecurity/utils.h"
 #include "iotsecurity/message_schema_consts.h"
@@ -27,6 +28,9 @@
 #define RECORD_PROPERTY_MAX_LENGTH_LOCAL_ADDRESS 256
 #define RECORD_PROPERTY_MAX_LENGTH_PEER_ADDRESS 256
 #define RECORD_PROPERTY_MAX_LENGTH_METADATA 256
+
+// FIXME refactor time implementation
+#define MAX_TIME_AS_STRING_LENGTH 25
 
 
 MU_DEFINE_ENUM_STRINGS(NETID_RESULT, NETID_RESULT_VALUES);
@@ -138,6 +142,7 @@ CollectorResult CollectorNetwork_AddMetadata(JSON_Object *root) {
         goto cleanup;
     }
 
+    // TODO move to a generic collector util
     MACHINE_ID = OSUtils_GetMachineId();
     if (MACHINE_ID != NULL) {
         json_status = json_object_set_string(root, EVENT_ID_KEY, STRING_c_str(MACHINE_ID));
@@ -146,22 +151,30 @@ CollectorResult CollectorNetwork_AddMetadata(JSON_Object *root) {
         }
     }
 
-    // TODO timings
-    // char timeStr[RECORD_TIME_PROPERTY_MAX_LENGTH];
-    // uint32_t timeStrLength = RECORD_TIME_PROPERTY_MAX_LENGTH;
-    // memset(timeStr, 0, timeStrLength);
-    // if (!TimeUtils_GetTimeAsString(eventLocalTime, timeStr, &timeStrLength)) {
-    //     return EVENT_COLLECTOR_EXCEPTION;
-    // }
-    // json_status = json_object_set_string(root, EVENT_LOCAL_TIMESTAMP_KEY, xxx);
-    // if (json_status != JSONSuccess) {
-    //     goto cleanup;
-    // }
+    // FIXME refactor time implementation
+    time_t eventLocalTime;
+    time(&eventLocalTime);
+    char timeStr[RECORD_TIME_PROPERTY_MAX_LENGTH];
+    uint32_t timeStrLength = RECORD_TIME_PROPERTY_MAX_LENGTH;
+    memset(timeStr, 0, timeStrLength);
+    if (!TimeUtils_GetTimeAsString(&eventLocalTime, timeStr, &timeStrLength)) {
+        return COLLECTOR_EXCEPTION;
+    }
 
-    // json_status = json_object_set_string(root, EVENT_UTC_TIMESTAMP_KEY, xxx);
-    // if (json_status != JSONSuccess) {
-    //     goto cleanup;
-    // }
+    json_status = json_object_set_string(root, EVENT_LOCAL_TIMESTAMP_KEY, timeStr);
+    if (json_status != JSONSuccess) {
+        goto cleanup;
+    }
+
+    timeStrLength = MAX_TIME_AS_STRING_LENGTH;
+    memset(timeStr, 0, timeStrLength);
+    if (!TimeUtils_GetLocalTimeAsUTCTimeAsString(&eventLocalTime, timeStr, &timeStrLength)) {
+        return COLLECTOR_EXCEPTION;
+    }
+    json_status = json_object_set_string(root, EVENT_UTC_TIMESTAMP_KEY, timeStr);
+    if (json_status != JSONSuccess) {
+        goto cleanup;
+    }
 
     JSON_Value *payload_value = json_value_init_array();
     JSON_Array *payload_object = json_value_get_array(payload_value);

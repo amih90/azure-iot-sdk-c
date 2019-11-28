@@ -60,7 +60,7 @@ multithreaded API is that the calls to DoWork are abstracted away from your code
 #endif // SET_TRUSTED_CERT_IN_SAMPLES
 
 /* Paste in your device connection string  */
-static const char* connectionString = "HostName=amhollan-iot-hub-dev.azure-devices.net;DeviceId=sdk;SharedAccessKey=VhM+g/DLdcfgSN8/C2Xg5fZ2veuOt0J/Y6uFSg+FStA="; // FIXME "[device connection string]";
+static const char* connectionString = "[device connection string]";
 
 static bool g_continueRunning = true;
 int g_interval = 10000;  // 10 sec send interval initially

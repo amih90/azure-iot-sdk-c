@@ -57,7 +57,6 @@ cleanup:
     return machineId;
 }
 
-
 bool TimeUtils_GetTimeAsString(time_t* currentTime, char* output, uint32_t* outputSize) {
     struct tm currentLocalTime;
     if (localtime_r(currentTime, &currentLocalTime) == NULL) {
