@@ -14,7 +14,7 @@ Please practice sound engineering practices when writing production code.
 #include "iothub_device_client.h"
 #include "iothub_client_options.h"
 #include "iothub_message.h"
-#include "iotsecurity/collector_network.h"
+#include "iotsecurity/iotsecurity_collector_network.h"
 #include "azure_c_shared_utility/threadapi.h"
 #include "azure_c_shared_utility/crt_abstractions.h"
 #include "azure_c_shared_utility/platform.h"
@@ -60,7 +60,7 @@ multithreaded API is that the calls to DoWork are abstracted away from your code
 #endif // SET_TRUSTED_CERT_IN_SAMPLES
 
 /* Paste in your device connection string  */
-static const char* connectionString = "[device connection string]";
+static const char* connectionString = "HostName=amhollan-iot-hub-dev.azure-devices.net;DeviceId=sdk;SharedAccessKey=VhM+g/DLdcfgSN8/C2Xg5fZ2veuOt0J/Y6uFSg+FStA="; // FIXME "[device connection string]";
 
 static bool g_continueRunning = true;
 int g_interval = 10000;  // 10 sec send interval initially
@@ -313,7 +313,7 @@ int main(void)
             JSON_Value* event_value = json_value_init_object();
             JSON_Object* event_object = json_value_get_object(event_value);
 
-            CollectorResult result = CollectorNetwork_Collect(event_object);
+            IOTSECURITY_COLLECTOR_RESULT result = CollectorNetwork_Collect(event_object);
             if (result != COLLECTOR_OK) {
                 (void)printf("failure to collect network events\n");
             } else {

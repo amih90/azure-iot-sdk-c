@@ -4,10 +4,10 @@
 #include "string.h"
 #include "azure_c_shared_utility/gb_time.h"
 #include "azure_c_shared_utility/string_token.h"
-#include "iotsecurity/utils.h"
-#include "iotsecurity/message_schema_consts.h"
-#include "iotsecurity/collector.h"
-#include "iotsecurity/collector_network.h"
+#include "iotsecurity/iotsecurity_utils.h"
+#include "iotsecurity/iotsecurity_message_schema_consts.h"
+#include "iotsecurity/iotsecurity_collector.h"
+#include "iotsecurity/iotsecurity_collector_network.h"
 
 // TODO add logs
 // #include "azure_c_shared_utility/xlogging.h"
@@ -62,15 +62,15 @@ typedef struct NETWORK_HANDLE_DATA_TAG
 } NETWORK_HANDLE_DATA;
 
 
-CollectorResult CollectorNetwork_Collect(JSON_Object *root);
+IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_Collect(JSON_Object *root);
 
-CollectorResult CollectorNetwork_AddMetadata(JSON_Object *root);
+IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddMetadata(JSON_Object *root);
 
-CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line);
+IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddRecord(JSON_Array *payload, char* line);
 
 
-CollectorResult CollectorNetwork_Collect(JSON_Object *root) {
-    CollectorResult collector_result = COLLECTOR_OK;
+IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_Collect(JSON_Object *root) {
+    IOTSECURITY_COLLECTOR_RESULT collector_result = COLLECTOR_OK;
     JSON_Status json_status = JSONSuccess;
 
     FILE *fp;
@@ -96,7 +96,7 @@ CollectorResult CollectorNetwork_Collect(JSON_Object *root) {
     JSON_Array *payload_array = json_object_get_array(root, PAYLOAD_KEY);
 
     while (fgets(line, sizeof(line), fp) != NULL) {
-        CollectorResult add_record_result = COLLECTOR_OK;
+        IOTSECURITY_COLLECTOR_RESULT add_record_result = COLLECTOR_OK;
         add_record_result = CollectorNetwork_AddRecord(payload_array, line);
         if (add_record_result != COLLECTOR_OK) {
             // TODO add warning
@@ -104,7 +104,12 @@ CollectorResult CollectorNetwork_Collect(JSON_Object *root) {
         }
     }
 
-    // TODO fill IsEmpty
+    // TODO IsEmpty == (len(payload) == 0)
+    bool isEmpty = false;
+    json_status = json_object_set_boolean(root, EVENT_IS_EMPTY_KEY, isEmpty);
+    if (json_status != JSONSuccess) {
+        goto cleanup;
+    }
 
 cleanup:
     if (fp != NULL) {
@@ -118,11 +123,11 @@ cleanup:
     return collector_result;
 }
 
-CollectorResult CollectorNetwork_AddMetadata(JSON_Object *root) {
-    CollectorResult collector_result = COLLECTOR_OK;
+IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddMetadata(JSON_Object *root) {
+    IOTSECURITY_COLLECTOR_RESULT collector_result = COLLECTOR_OK;
     JSON_Status json_status = JSONSuccess;
 
-    json_status = json_object_set_string(root, MESSAGE_SCHEMA_VERSION_KEY, LISTENING_PORTS_PAYLOAD_SCHEMA_VERSION);
+    json_status = json_object_set_string(root, EVENT_PAYLOAD_SCHEMA_VERSION_KEY, LISTENING_PORTS_PAYLOAD_SCHEMA_VERSION);
     if (json_status != JSONSuccess) {
         goto cleanup;
     }
@@ -142,7 +147,6 @@ CollectorResult CollectorNetwork_AddMetadata(JSON_Object *root) {
         goto cleanup;
     }
 
-    // TODO move to a generic collector util
     MACHINE_ID = OSUtils_GetMachineId();
     if (MACHINE_ID != NULL) {
         json_status = json_object_set_string(root, EVENT_ID_KEY, STRING_c_str(MACHINE_ID));
@@ -196,11 +200,11 @@ cleanup:
     return collector_result;
 }
 
-CollectorResult CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
+IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
     /*
      * Parse line and append to payload array
      */
-    CollectorResult collector_result = COLLECTOR_OK;
+    IOTSECURITY_COLLECTOR_RESULT collector_result = COLLECTOR_OK;
     JSON_Status json_status = JSONSuccess;
 
     NETWORK_HANDLE_DATA* record = malloc(sizeof(NETWORK_HANDLE_DATA));

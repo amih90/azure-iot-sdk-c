@@ -1,7 +1,7 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#include "iotsecurity/message_schema_consts.h"
+#include "iotsecurity/iotsecurity_message_schema_consts.h"
 
 const char* PAYLOAD_KEY = "Payload";
 const char* EVENTS_KEY = "Events";

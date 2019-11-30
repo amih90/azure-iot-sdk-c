@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include "azure_c_shared_utility/strings.h"
 #include "azure_c_shared_utility/xlogging.h"
-#include "iotsecurity/utils.h"
+#include "iotsecurity/iotsecurity_utils.h"
 
 
 #define MAX_LENGTH_MACHINE_ID 512
@@ -12,21 +12,6 @@ static const char* DATETIME_FORMAT = "%FT%TZ";
 
 
 STRING_HANDLE OSUtils_GetMachineId() {
-    /*
-    * Get machine-id
-    *
-    * The /etc/machine-id file contains the unique machine ID of the local
-    * system that is set during installation. The machine ID is a single
-    * newline-terminated, hexadecimal, 32-character, lowercase ID. When
-    * decoded from hexadecimal, this corresponds to a 16-byte/128-bit
-    * value.
-
-    * The machine ID is usually generated from a random source during
-    * system installation and stays constant for all subsequent boots.
-    * Optionally, for stateless systems, it is generated during runtime at
-    * early boot if it is found to be empty.
-    *
-    */
     STRING_HANDLE machineId = NULL;
     FILE *fp = NULL;
     char line[MAX_LENGTH_MACHINE_ID] = { 0 };

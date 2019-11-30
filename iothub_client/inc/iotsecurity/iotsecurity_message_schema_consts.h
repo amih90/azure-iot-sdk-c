@@ -1,8 +1,8 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-#ifndef MESSAGE_SCHEMA_H
-#define MESSAGE_SCHEMA_H
+#ifndef IOTSECURITY_MESSAGE_SCHEMA_CONSTS_H
+#define IOTSECURITY_MESSAGE_SCHEMA_CONSTS_H
 
 #include <stdbool.h>
 
@@ -166,4 +166,4 @@ extern const char* BASELINE_RESULT_KEY;
 extern const char* BASELINE_ERROR_KEY;
 extern const char* BASELINE_SEVERITY_KEY;
 
-#endif //MESSAGE_SCHEMA_H
+#endif /* IOTSECURITY_MESSAGE_SCHEMA_CONSTS_H */
