@@ -4,10 +4,9 @@
 #include "string.h"
 #include "azure_c_shared_utility/gb_time.h"
 #include "azure_c_shared_utility/string_token.h"
-#include "iotsecurity/iotsecurity_utils.h"
 #include "iotsecurity/iotsecurity_message_schema_consts.h"
 #include "iotsecurity/iotsecurity_collector.h"
-#include "iotsecurity/iotsecurity_collector_network.h"
+#include "iotsecurity/iotsecurity_snapshot_collector_network.h"
 
 // TODO add logs
 // #include "azure_c_shared_utility/xlogging.h"
@@ -15,8 +14,6 @@
 
 #define COMMAND_SS_MIN_SCAN_COLS 5
 
-#define RECORD_VALUE_MAX_LENGTH 512
-#define RECORD_TIME_PROPERTY_MAX_LENGTH 25
 
 /*
 * FIXME RECORD_PROPERTY_MAX_LENGTH_NETID and RECORD_PROPERTY_MAX_LENGTH_STATE
@@ -28,9 +25,6 @@
 #define RECORD_PROPERTY_MAX_LENGTH_LOCAL_ADDRESS 256
 #define RECORD_PROPERTY_MAX_LENGTH_PEER_ADDRESS 256
 #define RECORD_PROPERTY_MAX_LENGTH_METADATA 256
-
-// FIXME refactor time implementation
-#define MAX_TIME_AS_STRING_LENGTH 25
 
 
 MU_DEFINE_ENUM_STRINGS(NETID_RESULT, NETID_RESULT_VALUES);
@@ -48,8 +42,6 @@ static const char* NETWORK_SCHEMA_EXTRA_DETAILS_METADATA_KEY = "Metadata";
 
 static const char* PORT_DELIMITER =  ":";
 
-static STRING_HANDLE MACHINE_ID = NULL;
-
 typedef struct NETWORK_HANDLE_DATA_TAG
 {
     char netid[13];
@@ -62,160 +54,80 @@ typedef struct NETWORK_HANDLE_DATA_TAG
 } NETWORK_HANDLE_DATA;
 
 
-IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_Collect(JSON_Object *root);
+IOTSECURITY_COLLECTOR_RESULT SnapshotCollectorNetwork_Collect(JSON_Object *root);
 
-IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddMetadata(JSON_Object *root);
-
-IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddRecord(JSON_Array *payload, char* line);
+IOTSECURITY_COLLECTOR_RESULT SnapshotCollectorNetwork_AddRecord(JSON_Array *payload, char* line);
 
 
-IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_Collect(JSON_Object *root) {
-    IOTSECURITY_COLLECTOR_RESULT collector_result = COLLECTOR_OK;
+IOTSECURITY_COLLECTOR_RESULT SnapshotCollectorNetwork_Collect(JSON_Object *root) {
+    IOTSECURITY_COLLECTOR_RESULT collector_result = COLLECTOR_RESULT_OK;
     JSON_Status json_status = JSONSuccess;
 
     FILE *fp;
     char line[RECORD_VALUE_MAX_LENGTH] = { 0 };
 
-    collector_result = CollectorNetwork_AddMetadata(root);
-    if (collector_result != COLLECTOR_OK) {
+    collector_result = Collector_AddMetadata(root);
+    if (collector_result != COLLECTOR_RESULT_OK) {
         goto cleanup;
     }
 
     // Open the command output for reading
     fp = popen(NETWORK_COMMAND, "r");
     if (fp == NULL) {
-        collector_result = COLLECTOR_EXCEPTION;
+        collector_result = COLLECTOR_RESULT_EXCEPTION;
         goto cleanup;
     }
 
     if (ferror(fp)) {
-        collector_result = COLLECTOR_EXCEPTION;
+        collector_result = COLLECTOR_RESULT_EXCEPTION;
         goto cleanup;
     }
 
     JSON_Array *payload_array = json_object_get_array(root, PAYLOAD_KEY);
 
     while (fgets(line, sizeof(line), fp) != NULL) {
-        IOTSECURITY_COLLECTOR_RESULT add_record_result = COLLECTOR_OK;
-        add_record_result = CollectorNetwork_AddRecord(payload_array, line);
-        if (add_record_result != COLLECTOR_OK) {
+        IOTSECURITY_COLLECTOR_RESULT add_record_result = COLLECTOR_RESULT_OK;
+        add_record_result = SnapshotCollectorNetwork_AddRecord(payload_array, line);
+        if (add_record_result != COLLECTOR_RESULT_OK) {
             // TODO add warning
             continue;
         }
     }
 
-    // TODO IsEmpty == (len(payload) == 0)
-    bool isEmpty = false;
+    bool isEmpty = (json_array_get_count(payload_array) == 0);
     json_status = json_object_set_boolean(root, EVENT_IS_EMPTY_KEY, isEmpty);
     if (json_status != JSONSuccess) {
         goto cleanup;
     }
-
 cleanup:
     if (fp != NULL) {
         pclose(fp);
     }
 
-    if (collector_result != COLLECTOR_OK) {
+    if (collector_result != COLLECTOR_RESULT_OK) {
         // TODO free
     }
 
     return collector_result;
 }
 
-IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddMetadata(JSON_Object *root) {
-    IOTSECURITY_COLLECTOR_RESULT collector_result = COLLECTOR_OK;
-    JSON_Status json_status = JSONSuccess;
 
-    json_status = json_object_set_string(root, EVENT_PAYLOAD_SCHEMA_VERSION_KEY, LISTENING_PORTS_PAYLOAD_SCHEMA_VERSION);
-    if (json_status != JSONSuccess) {
-        goto cleanup;
-    }
-
-    json_status = json_object_set_string(root, EVENT_NAME_KEY, LISTENING_PORTS_NAME);
-    if (json_status != JSONSuccess) {
-        goto cleanup;
-    }
-
-    json_status = json_object_set_string(root, EVENT_CATEGORY_KEY, EVENT_PERIODIC_CATEGORY);
-    if (json_status != JSONSuccess) {
-        goto cleanup;
-    }
-
-    json_status = json_object_set_string(root, EVENT_TYPE_KEY, EVENT_TYPE_SECURITY_VALUE);
-    if (json_status != JSONSuccess) {
-        goto cleanup;
-    }
-
-    MACHINE_ID = OSUtils_GetMachineId();
-    if (MACHINE_ID != NULL) {
-        json_status = json_object_set_string(root, EVENT_ID_KEY, STRING_c_str(MACHINE_ID));
-        if (json_status != JSONSuccess) {
-            goto cleanup;
-        }
-    }
-
-    // FIXME refactor time implementation
-    time_t eventLocalTime;
-    time(&eventLocalTime);
-    char timeStr[RECORD_TIME_PROPERTY_MAX_LENGTH];
-    uint32_t timeStrLength = RECORD_TIME_PROPERTY_MAX_LENGTH;
-    memset(timeStr, 0, timeStrLength);
-    if (!TimeUtils_GetTimeAsString(&eventLocalTime, timeStr, &timeStrLength)) {
-        return COLLECTOR_EXCEPTION;
-    }
-
-    json_status = json_object_set_string(root, EVENT_LOCAL_TIMESTAMP_KEY, timeStr);
-    if (json_status != JSONSuccess) {
-        goto cleanup;
-    }
-
-    timeStrLength = MAX_TIME_AS_STRING_LENGTH;
-    memset(timeStr, 0, timeStrLength);
-    if (!TimeUtils_GetLocalTimeAsUTCTimeAsString(&eventLocalTime, timeStr, &timeStrLength)) {
-        return COLLECTOR_EXCEPTION;
-    }
-    json_status = json_object_set_string(root, EVENT_UTC_TIMESTAMP_KEY, timeStr);
-    if (json_status != JSONSuccess) {
-        goto cleanup;
-    }
-
-    JSON_Value *payload_value = json_value_init_array();
-    JSON_Array *payload_object = json_value_get_array(payload_value);
-
-    json_status = json_object_set_value(root, PAYLOAD_KEY, payload_value);
-    if (json_status != JSONSuccess) {
-        goto cleanup;
-    }
-
-cleanup:
-    if (json_status != JSONSuccess) {
-        collector_result = COLLECTOR_EXCEPTION;
-    }
-
-    if (collector_result != COLLECTOR_OK) {
-        // TODO free
-    }
-
-    return collector_result;
-}
-
-IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
+IOTSECURITY_COLLECTOR_RESULT SnapshotCollectorNetwork_AddRecord(JSON_Array *payload, char* line) {
     /*
      * Parse line and append to payload array
      */
-    IOTSECURITY_COLLECTOR_RESULT collector_result = COLLECTOR_OK;
+    IOTSECURITY_COLLECTOR_RESULT collector_result = COLLECTOR_RESULT_OK;
     JSON_Status json_status = JSONSuccess;
 
     NETWORK_HANDLE_DATA* record = malloc(sizeof(NETWORK_HANDLE_DATA));
     if (record == NULL) {
-        collector_result = COLLECTOR_MEMORY_EXCEPTION;
+        collector_result = COLLECTOR_RESULT_MEMORY_EXCEPTION;
         goto cleanup;
     }
 
     int scanCols = sscanf(line, NETWORK_COMMAND_SS_FORMAT, record->netid, record->state, &(record->recvQ), &(record->sendQ), record->localAddress, record->peerAddress, record->metadata);
     if (scanCols < COMMAND_SS_MIN_SCAN_COLS) {
-        collector_result = COLLECTOR_PARSE_EXCEPTION;
+        collector_result = COLLECTOR_RESULT_PARSE_EXCEPTION;
         goto cleanup;
     }
 
@@ -223,7 +135,7 @@ IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddRecord(JSON_Array *payload, cha
     JSON_Object *record_object = json_value_get_object(record_value);
 
     NETID_RESULT netid_result;
-    MU_STRING_TO_ENUM("NETID_TCP", NETID_RESULT, &netid_result); // FIX
+    MU_STRING_TO_ENUM("NETID_TCP", NETID_RESULT, &netid_result); // FIXME
     switch (netid_result)
     {
         case NETID_TCP:
@@ -280,7 +192,7 @@ IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddRecord(JSON_Array *payload, cha
         case NETID_P_DGR:
         case NETID_NL:
         default:
-            collector_result = COLLECTOR_NOT_SUPPORTED_EXCEPTION;
+            collector_result = COLLECTOR_RESULT_NOT_SUPPORTED_EXCEPTION;
             goto cleanup;
     }
 
@@ -320,7 +232,7 @@ IOTSECURITY_COLLECTOR_RESULT CollectorNetwork_AddRecord(JSON_Array *payload, cha
 
 cleanup:
     if (json_status != JSONSuccess) {
-        collector_result = COLLECTOR_EXCEPTION;
+        collector_result = COLLECTOR_RESULT_EXCEPTION;
     }
 
     if (record != NULL) {

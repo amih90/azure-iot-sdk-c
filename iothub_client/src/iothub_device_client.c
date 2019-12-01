@@ -8,6 +8,9 @@
 #include "iothub_client_core.h"
 #include "iothub_device_client.h"
 
+// TODO include iff security flag is on
+#include "iotsecurity/iotsecurity_client.h"
+
 IOTHUB_DEVICE_CLIENT_HANDLE IoTHubDeviceClient_CreateFromConnectionString(const char* connectionString, IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol)
 {
     return (IOTHUB_DEVICE_CLIENT_HANDLE)IoTHubClientCore_CreateFromConnectionString(connectionString, protocol);
@@ -35,7 +38,31 @@ void IoTHubDeviceClient_Destroy(IOTHUB_DEVICE_CLIENT_HANDLE iotHubClientHandle)
 
 IOTHUB_CLIENT_RESULT IoTHubDeviceClient_SendEventAsync(IOTHUB_DEVICE_CLIENT_HANDLE iotHubClientHandle, IOTHUB_MESSAGE_HANDLE eventMessageHandle, IOTHUB_CLIENT_EVENT_CONFIRMATION_CALLBACK eventConfirmationCallback, void* userContextCallback)
 {
-    return IoTHubClientCore_SendEventAsync((IOTHUB_CLIENT_CORE_HANDLE)iotHubClientHandle, eventMessageHandle, eventConfirmationCallback, userContextCallback);
+    IOTHUB_CLIENT_RESULT iothub_client_result = IOTHUB_CLIENT_OK;
+
+    iothub_client_result = IoTHubClientCore_SendEventAsync((IOTHUB_CLIENT_CORE_HANDLE)iotHubClientHandle, eventMessageHandle, eventConfirmationCallback, userContextCallback);
+
+    if (iothub_client_result == IOTHUB_CLIENT_OK) {
+        iothub_client_result = IoTHubDeviceClient_SendSecurityMessageAsync(iotHubClientHandle);
+    }
+
+    return iothub_client_result;
+}
+
+IOTHUB_CLIENT_RESULT IoTHubDeviceClient_SendSecurityMessageAsync(IOTHUB_DEVICE_CLIENT_HANDLE iotHubClientHandle)
+{
+    IOTHUB_CLIENT_RESULT iothub_client_result = IOTHUB_CLIENT_OK;
+
+    IOTHUB_MESSAGE_HANDLE iotSecurityEventMessageHandle;
+
+    IOTSECURITY_CLIENT_RESULT iotsecurity_client_result = IoTSecurityClient_Collect(&iotSecurityEventMessageHandle);
+    if (iotsecurity_client_result == IOTSECURITY_CLIENT_RESULT_OK) {
+        iothub_client_result = IoTSecurityClient_SendEventAsync((IOTHUB_CLIENT_CORE_HANDLE)iotHubClientHandle, iotSecurityEventMessageHandle, NULL, NULL);
+    }
+
+    IoTHubMessage_Destroy(iotSecurityEventMessageHandle);
+
+    return iothub_client_result;
 }
 
 IOTHUB_CLIENT_RESULT IoTHubDeviceClient_GetSendStatus(IOTHUB_DEVICE_CLIENT_HANDLE iotHubClientHandle, IOTHUB_CLIENT_STATUS *iotHubClientStatus)

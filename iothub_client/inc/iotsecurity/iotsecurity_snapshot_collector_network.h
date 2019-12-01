@@ -4,8 +4,8 @@
 #ifndef IOTSECURITY_COLLECTOR_NETWORK_H
 #define IOTSECURITY_COLLECTOR_NETWORK_H
 
-#include "iotsecurity_collector.h"
 #include "parson.h"
+#include "iotsecurity_collector.h"
 
 #ifdef __cplusplus
 extern "C"
@@ -37,7 +37,8 @@ extern "C"
 
     MU_DEFINE_ENUM(NETID_RESULT, NETID_RESULT_VALUES)
 
-MOCKABLE_FUNCTION(, IOTSECURITY_COLLECTOR_RESULT, CollectorNetwork_Collect, JSON_Object, *root);
+
+MOCKABLE_FUNCTION(, IOTSECURITY_COLLECTOR_RESULT, SnapshotCollectorNetwork_Collect, JSON_Object, *root);
 
 #ifdef __cplusplus
 }
