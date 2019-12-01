@@ -9,7 +9,6 @@
 #include "iotsecurity/iotsecurity_utils.h"
 #include "parson.h"
 
-
 static STRING_HANDLE MACHINE_ID = NULL;
 
 // TODO cleanup

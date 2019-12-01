@@ -86,9 +86,6 @@ set(linkerOption "" CACHE STRING "passes a string to the shared and exe linker o
 
 set(use_prov_client_core OFF)
 
-MESSAGE("FOO? " ${use_security})
-
-
 if (${use_security})
     add_definitions(-DUSE_SECURITY)
 endif()
