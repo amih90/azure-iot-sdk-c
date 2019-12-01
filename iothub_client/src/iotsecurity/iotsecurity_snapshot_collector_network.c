@@ -7,6 +7,7 @@
 #include "iotsecurity/iotsecurity_message_schema_consts.h"
 #include "iotsecurity/iotsecurity_collector.h"
 #include "iotsecurity/iotsecurity_snapshot_collector_network.h"
+#include "iotsecurity/iotsecurity_utils.h"
 
 // TODO add logs
 // #include "azure_c_shared_utility/xlogging.h"
@@ -135,7 +136,8 @@ IOTSECURITY_COLLECTOR_RESULT SnapshotCollectorNetwork_AddRecord(JSON_Array *payl
     JSON_Object *record_object = json_value_get_object(record_value);
 
     NETID_RESULT netid_result;
-    MU_STRING_TO_ENUM("NETID_TCP", NETID_RESULT, &netid_result); // FIXME
+    // FIXME StringUtils_ToUpper(record->netid);
+    MU_STRING_TO_ENUM("NETID_TCP", NETID_RESULT, &netid_result);
     switch (netid_result)
     {
         case NETID_TCP:

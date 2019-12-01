@@ -1,6 +1,7 @@
-#include <stdio.h>
+#include <ctype.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdio.h>
 #include "azure_c_shared_utility/strings.h"
 #include "azure_c_shared_utility/xlogging.h"
 #include "iotsecurity/iotsecurity_utils.h"
@@ -59,4 +60,15 @@ bool TimeUtils_GetLocalTimeAsUTCTimeAsString(time_t* currentLocalTime, char* out
     }
     *outputSize = strftime(output, *outputSize, DATETIME_FORMAT, &currentUTCTime);
     return true;
+}
+
+void StringUtils_ToUpper(char* str) {
+    if (str != NULL) {
+        while (*str != '\0') {
+            if (isalpha((int)*str) && islower((int)*str)) {
+                *str = (char)toupper((int)*str);
+            }
+            str++;
+        }
+    }
 }

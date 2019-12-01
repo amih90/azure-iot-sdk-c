@@ -57,6 +57,24 @@ set(iothub_client_h_files
     ./inc/internal/iothubtransport.h
 )
 
+if(${use_security})
+    set(iothub_client_c_files ${iothub_client_c_files}
+        ./src/iotsecurity/iotsecurity_message_schema_consts.c
+        ./src/iotsecurity/iotsecurity_utils.c
+        ./src/iotsecurity/iotsecurity_client.c
+        ./src/iotsecurity/iotsecurity_collector.c
+        ./src/iotsecurity/iotsecurity_snapshot_collector_network.c
+    )
+
+    set(iothub_client_h_files ${iothub_client_h_files}
+        ./inc/iotsecurity/iotsecurity_utils.h
+        ./inc/iotsecurity/iotsecurity_message_schema_consts.h
+        ./inc/iotsecurity/iotsecurity_client.h
+        ./inc/iotsecurity/iotsecurity_collector.h
+        ./inc/iotsecurity/iotsecurity_snapshot_collector_network.h
+    )
+endif()
+
 set(iothub_client_libs)
 
 set(install_staticlibs

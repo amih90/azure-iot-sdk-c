@@ -54,6 +54,7 @@ MOCKABLE_FUNCTION(, bool, TimeUtils_GetTimeAsString, time_t*, currentTime, char*
  */
 MOCKABLE_FUNCTION(, bool, TimeUtils_GetLocalTimeAsUTCTimeAsString, time_t*, currentLocalTime, char*, output, uint32_t*, outputSize);
 
+MOCKABLE_FUNCTION(, void, StringUtils_ToUpper, char*, str);
 
 #ifdef __cplusplus
 }

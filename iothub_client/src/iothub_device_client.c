@@ -8,8 +8,9 @@
 #include "iothub_client_core.h"
 #include "iothub_device_client.h"
 
-// TODO include iff security flag is on
-#include "iotsecurity/iotsecurity_client.h"
+#ifdef USE_SECURITY
+    #include "iotsecurity/iotsecurity_client.h"
+#endif
 
 IOTHUB_DEVICE_CLIENT_HANDLE IoTHubDeviceClient_CreateFromConnectionString(const char* connectionString, IOTHUB_CLIENT_TRANSPORT_PROVIDER protocol)
 {
@@ -42,13 +43,16 @@ IOTHUB_CLIENT_RESULT IoTHubDeviceClient_SendEventAsync(IOTHUB_DEVICE_CLIENT_HAND
 
     iothub_client_result = IoTHubClientCore_SendEventAsync((IOTHUB_CLIENT_CORE_HANDLE)iotHubClientHandle, eventMessageHandle, eventConfirmationCallback, userContextCallback);
 
-    if (iothub_client_result == IOTHUB_CLIENT_OK) {
-        iothub_client_result = IoTHubDeviceClient_SendSecurityMessageAsync(iotHubClientHandle);
-    }
+    #ifdef USE_SECURITY
+        if (iothub_client_result == IOTHUB_CLIENT_OK) {
+            iothub_client_result = IoTHubDeviceClient_SendSecurityMessageAsync(iotHubClientHandle);
+        }
+    #endif
 
     return iothub_client_result;
 }
 
+#ifdef USE_SECURITY
 IOTHUB_CLIENT_RESULT IoTHubDeviceClient_SendSecurityMessageAsync(IOTHUB_DEVICE_CLIENT_HANDLE iotHubClientHandle)
 {
     IOTHUB_CLIENT_RESULT iothub_client_result = IOTHUB_CLIENT_OK;
@@ -64,6 +68,7 @@ IOTHUB_CLIENT_RESULT IoTHubDeviceClient_SendSecurityMessageAsync(IOTHUB_DEVICE_C
 
     return iothub_client_result;
 }
+#endif
 
 IOTHUB_CLIENT_RESULT IoTHubDeviceClient_GetSendStatus(IOTHUB_DEVICE_CLIENT_HANDLE iotHubClientHandle, IOTHUB_CLIENT_STATUS *iotHubClientStatus)
 {
