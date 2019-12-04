@@ -13,6 +13,7 @@ run_longhaul_tests=OFF
 build_amqp=ON
 build_http=ON
 build_mqtt=ON
+build_security=ON
 no_blob=OFF
 run_unittests=OFF
 build_python=OFF
@@ -40,6 +41,7 @@ usage ()
     echo " --no-amqp                     do no build AMQP transport and samples"
     echo " --no-http                     do no build HTTP transport and samples"
     echo " --no-mqtt                     do no build MQTT transport and samples"
+    echo " --no-security                 do no build IoT Security"
     echo " --no_uploadtoblob             do no build upload to blob"
     echo " --no-make                     do not run make after cmake"
     echo " --toolchain-file <file>       pass cmake a toolchain file for cross compiling"
@@ -49,7 +51,7 @@ usage ()
     echo " --no-logging                  Disable logging"
     echo " --provisioning                Use Provisioning with Flow"
     echo " --use-tpm-simulator           Build TPM simulator"
-    echo " --use-edge-modules            Build Edge modules"    
+    echo " --use-edge-modules            Build Edge modules"
     exit 1
 }
 
@@ -59,7 +61,7 @@ process_args ()
     extracloptions=" "
 
     for arg in $*
-    do      
+    do
       if [ $save_next_arg == 1 ]
       then
         # save arg to pass to gcc
@@ -78,7 +80,7 @@ process_args ()
         then
           echo "Supported python versions are 2.7, 3.4 or 3.5 or 3.6"
           exit 1
-        fi 
+        fi
         save_next_arg=0
       elif [ $save_next_arg == 4 ]
       then
@@ -94,6 +96,7 @@ process_args ()
               "--no-amqp" ) build_amqp=OFF;;
               "--no-http" ) build_http=OFF;;
               "--no-mqtt" ) build_mqtt=OFF;;
+              "--no-security" ) build_security=OFF;;
               "--no_uploadtoblob" ) no_blob=ON;;
               "--no-make" ) make=false;;
               "--build-python" ) save_next_arg=3;;
@@ -115,44 +118,45 @@ process_args ()
       toolchainfile=$(readlink -f $toolchainfile)
       toolchainfile="-DCMAKE_TOOLCHAIN_FILE=$toolchainfile"
     fi
-   
+
    if [ "$cmake_install_prefix" != " " ]
    then
      cmake_install_prefix="-DCMAKE_INSTALL_PREFIX=$cmake_install_prefix"
    fi
 }
 
+echo "asdasdeasdasd ${build_security}"
 process_args $*
 
 rm -r -f $build_folder
 mkdir -p $build_folder
 pushd $build_folder
-cmake $toolchainfile $cmake_install_prefix -Drun_valgrind:BOOL=$run_valgrind -DcompileOption_C:STRING="$extracloptions" -Drun_e2e_tests:BOOL=$run_e2e_tests -Drun_sfc_tests:BOOL=$run-sfc-tests -Drun_longhaul_tests=$run_longhaul_tests -Duse_amqp:BOOL=$build_amqp -Duse_http:BOOL=$build_http -Duse_mqtt:BOOL=$build_mqtt -Ddont_use_uploadtoblob:BOOL=$no_blob -Drun_unittests:BOOL=$run_unittests -Dbuild_python:STRING=$build_python -Dno_logging:BOOL=$no_logging $build_root -Duse_prov_client:BOOL=$prov_auth -Duse_tpm_simulator:BOOL=$prov_use_tpm_simulator -Duse_edge_modules=$use_edge_modules
+cmake $toolchainfile $cmake_install_prefix -Drun_valgrind:BOOL=$run_valgrind -DcompileOption_C:STRING="$extracloptions" -Drun_e2e_tests:BOOL=$run_e2e_tests -Drun_sfc_tests:BOOL=$run-sfc-tests -Drun_longhaul_tests=$run_longhaul_tests -Duse_amqp:BOOL=$build_amqp -Duse_http:BOOL=$build_http -Duse_mqtt:BOOL=$build_mqtt -Duse_security:BOOL=$build_security -Ddont_use_uploadtoblob:BOOL=$no_blob -Drun_unittests:BOOL=$run_unittests -Dbuild_python:STRING=$build_python -Dno_logging:BOOL=$no_logging $build_root -Duse_prov_client:BOOL=$prov_auth -Duse_tpm_simulator:BOOL=$prov_use_tpm_simulator -Duse_edge_modules=$use_edge_modules
 
 if [ "$make" = true ]
 then
   # Set the default cores
   MAKE_CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
-  
+
   echo "Initial MAKE_CORES=$MAKE_CORES"
-  
-  # Make sure there is enough virtual memory on the device to handle more than one job  
+
+  # Make sure there is enough virtual memory on the device to handle more than one job
   MINVSPACE="1500000"
-  
+
   # Acquire total memory and total swap space setting them to zero in the event the command fails
   MEMAR=( $(sed -n -e 's/^MemTotal:[^0-9]*\([0-9][0-9]*\).*/\1/p' -e 's/^SwapTotal:[^0-9]*\([0-9][0-9]*\).*/\1/p' /proc/meminfo) )
   [ -z "${MEMAR[0]##*[!0-9]*}" ] && MEMAR[0]=0
   [ -z "${MEMAR[1]##*[!0-9]*}" ] && MEMAR[1]=0
-  
+
   let VSPACE=${MEMAR[0]}+${MEMAR[1]}
-  
+
   echo "VSPACE=$VSPACE"
 
   if [ "$VSPACE" -lt "$MINVSPACE" ] ; then
     echo "WARNING: Not enough space.  Setting MAKE_CORES=1"
     MAKE_CORES=1
   fi
-  
+
   echo "MAKE_CORES=$MAKE_CORES"
   echo "Starting run..."
   date
@@ -160,7 +164,7 @@ then
   echo "completed run..."
   date
 
-  # Only for testing E2E behaviour !!! 
+  # Only for testing E2E behaviour !!!
   TEST_CORES=16
 
   if [[ $run_valgrind == 1 ]] ;

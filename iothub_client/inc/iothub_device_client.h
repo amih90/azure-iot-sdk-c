@@ -128,6 +128,19 @@ extern "C"
     */
     MOCKABLE_FUNCTION(, IOTHUB_CLIENT_RESULT, IoTHubDeviceClient_SendEventAsync, IOTHUB_DEVICE_CLIENT_HANDLE, iotHubClientHandle, IOTHUB_MESSAGE_HANDLE, eventMessageHandle, IOTHUB_CLIENT_EVENT_CONFIRMATION_CALLBACK, eventConfirmationCallback, void*, userContextCallback);
 
+
+    /**
+    * @brief    Asynchronous call to send the security message
+    *
+    * @param    iotHubClientHandle              The handle created by a call to the create function.
+    *
+    *           @b NOTE: The application behavior is undefined if the user calls
+    *           the ::IoTHubDeviceClient_Destroy function from within any callback.
+    * @return   IOTHUB_CLIENT_OK upon success or an error code upon failure.
+    */
+    MOCKABLE_FUNCTION(, IOTHUB_CLIENT_RESULT, IoTHubDeviceClient_SendSecurityMessageAsync, IOTHUB_DEVICE_CLIENT_HANDLE, iotHubClientHandle);
+
+
     /**
     * @brief    This function returns the current sending status for IoTHubClient.
     *
