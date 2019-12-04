@@ -47,24 +47,6 @@ set(iothub_client_h_files
     ./inc/internal/iothubtransport.h
 )
 
-if(${use_security})
-    set(iothub_client_c_files ${iothub_client_c_files}
-        ./src/iotsecurity/iotsecurity_message_schema_consts.c
-        ./src/iotsecurity/iotsecurity_utils.c
-        ./src/iotsecurity/iotsecurity_client.c
-        ./src/iotsecurity/iotsecurity_collector.c
-        ./src/iotsecurity/iotsecurity_snapshot_collector_network.c
-    )
-
-    set(iothub_client_h_files ${iothub_client_h_files}
-        ./inc/iotsecurity/iotsecurity_utils.h
-        ./inc/iotsecurity/iotsecurity_message_schema_consts.h
-        ./inc/iotsecurity/iotsecurity_client.h
-        ./inc/iotsecurity/iotsecurity_collector.h
-        ./inc/iotsecurity/iotsecurity_snapshot_collector_network.h
-    )
-endif()
-
 set(iothub_client_libs)
 
 set(install_staticlibs
@@ -109,6 +91,21 @@ endif()
 set(iothub_client_h_install_files
     ${iothub_client_h_files}
 )
+
+if(${use_security})
+    set(install_staticlibs ${install_staticlibs}
+        iotsecurity
+    )
+
+    set(iothub_client_c_files ${iothub_client_c_files}
+        ./src/iotsecurity_client.c
+    )
+
+    set(iothub_client_h_files ${iothub_client_h_files}
+        ./inc/iotsecurity/iotsecurity_client.h
+    )
+endif()
+
 
 if(${use_http})
     set(install_staticlibs ${install_staticlibs}
@@ -249,6 +246,10 @@ endif()
 
 #these are the include folders
 #the following "set" statetement exports across the project a global variable called SHARED_UTIL_INC_FOLDER that expands to whatever needs to included when using COMMON library
+
+if(${use_security})
+    set(IOTSECURITY_INC_FOLDER ${CMAKE_CURRENT_LIST_DIR}/inc CACHE INTERNAL "this is what needs to be included if using iotsecurity lib" FORCE)
+endif()
 
 if(${use_http})
     set(IOTHUB_CLIENT_HTTP_TRANSPORT_INC_FOLDER ${CMAKE_CURRENT_LIST_DIR}/inc CACHE INTERNAL "this is what needs to be included if using iothub_client_http_transport lib" FORCE)

@@ -33,7 +33,7 @@ typedef struct IOTHUB_MESSAGE_HANDLE_DATA_TAG
     char* connectionDeviceId;
     IOTHUB_MESSAGE_DIAGNOSTIC_PROPERTY_DATA_HANDLE diagnosticData;
     bool is_security_message;
-}IOTHUB_MESSAGE_HANDLE_DATA;
+} IOTHUB_MESSAGE_HANDLE_DATA;
 
 static bool ContainsOnlyUsAscii(const char* asciiValue)
 {
