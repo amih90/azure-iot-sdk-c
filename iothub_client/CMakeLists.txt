@@ -94,6 +94,34 @@ set(iothub_client_h_install_files
     ${iothub_client_h_files}
 )
 
+if(${use_security})
+    if (NOT ${use_installed_dependencies})
+        if (NOT TARGET azure_iot_security_sdk)
+            add_subdirectory(../deps/azure-iot-security-sdk azure-iot-security-sdk)
+        endif()
+    else()
+        if (NOT azure_iot_security_sdkFOUND)
+            find_package(azure_iot_security_sdk REQUIRED)
+        endif()
+    endif()
+    
+    include_directories(${AZURE_IOT_SECURITY_SDK_INC_FOLDER})
+
+    set(install_staticlibs ${install_staticlibs}
+        azure_iot_security_sdk
+    )
+
+    set(iothub_client_c_files
+        ${iothub_client_c_files}
+        ./src/iotsecurity_client.c
+    )
+
+    set(iothub_client_h_files
+        ${iothub_client_h_files}
+        ./inc/iotsecurity_client.h
+    )
+endif()
+
 if(${use_http})
     set(install_staticlibs ${install_staticlibs}
         iothub_client_http_transport
@@ -235,6 +263,10 @@ endif()
 
 #these are the include folders
 #the following "set" statetement exports across the project a global variable called SHARED_UTIL_INC_FOLDER that expands to whatever needs to included when using COMMON library
+
+if(${use_security})
+    set(IOTSECURITY_CLIENT_INC_FOLDER ${CMAKE_CURRENT_LIST_DIR}/inc CACHE INTERNAL "this is what needs to be included if using iothub_client_http_transport lib" FORCE)
+endif()
 
 if(${use_http})
     set(IOTHUB_CLIENT_HTTP_TRANSPORT_INC_FOLDER ${CMAKE_CURRENT_LIST_DIR}/inc CACHE INTERNAL "this is what needs to be included if using iothub_client_http_transport lib" FORCE)
