@@ -1,0 +1,3 @@
+LIBRARY iothub_client_dll
+EXPORTS
+	USE_SECURITY_MODULE

@@ -1,6 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+#ifndef USE_SECURITY_MODULE
+//trying to compile iotsecurity_client.c while the symbol USE_SECURITY_MODULE is not defined
+#else
+
 #ifndef IOTSECURITY_CLIENT_H
 #define IOTSECURITY_CLIENT_H
 
@@ -24,7 +28,7 @@ typedef enum IOTSECURITY_CLIENT_RESULT_TAG {
 
 typedef struct IOTSECURITY_CLIENT_HANDLE_TAG* IOTSECURITY_CLIENT_HANDLE;
 
-MOCKABLE_FUNCTION(, IOTSECURITY_CLIENT_RESULT, IoTSecurityClient_Init);
+MOCKABLE_FUNCTION(, IOTSECURITY_CLIENT_HANDLE, IoTSecurityClient_Init, IOTHUB_DEVICE_CLIENT_HANDLE, iothub_client_handle);
 
 MOCKABLE_FUNCTION(, IOTSECURITY_CLIENT_RESULT, IoTSecurityClient_Collect, IOTSECURITY_CLIENT_HANDLE, iotsecurity_client_handle);
 
@@ -37,3 +41,5 @@ MOCKABLE_FUNCTION(, IOTSECURITY_CLIENT_RESULT, IoTSecurityClient_Deinit, IOTSECU
 #endif
 
 #endif /* IOTSECURITY_CLIENT_H */
+
+#endif /* USE_SECURITY_MODULE */

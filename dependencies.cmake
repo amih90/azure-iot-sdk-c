@@ -5,7 +5,13 @@ if(${use_installed_dependencies})
     if (NOT azure_c_shared_utility_FOUND)
         find_package(azure_c_shared_utility REQUIRED CONFIG)
     endif ()
-    
+
+    if (${use_security_module})
+        if (NOT azure_iot_security_sdk_FOUND)
+            find_package(azure_iot_security_sdk REQUIRED CONFIG)
+        endif ()
+    endif ()
+
     if (${use_amqp})
         if (NOT uamqp_FOUND)
             find_package(uamqp REQUIRED CONFIG)
@@ -21,6 +27,10 @@ if(${use_installed_dependencies})
 else ()
     add_subdirectory(c-utility)
 
+    if (${use_security_module})
+        add_subdirectory(deps/azure-iot-security-sdk)
+    endif ()
+
     if (${use_amqp})
         add_subdirectory(uamqp)
     endif ()
@@ -35,7 +45,7 @@ else ()
 endif()
 
 # The use of aziotsharedutil's INTERFACE_INCLUDE_DIRECTORIES is a more flexible replacement
-# for the SHARED_UTIL_INC_FOLDER, which is a single path. It is expected that the 
+# for the SHARED_UTIL_INC_FOLDER, which is a single path. It is expected that the
 # SHARED_UTIL_INC_FOLDER should eventually be eliminated as redundant.
 get_target_property(AZURE_C_SHARED_UTILITY_INTERFACE_INCLUDE_DIRECTORIES aziotsharedutil INTERFACE_INCLUDE_DIRECTORIES)
 if (AZURE_C_SHARED_UTILITY_INTERFACE_INCLUDE_DIRECTORIES)

@@ -81,6 +81,22 @@ if (use_edge_modules)
     )
 endif()
 
+if(${use_security_module})
+    message("AAAAAAAAAAAAAAAAAAA ${use_security_module}")
+
+    set(install_staticlibs ${install_staticlibs}
+        azure_iot_security_client
+    )
+
+    set(azure_iot_security_sdk_c_files
+        ./src/iotsecurity_client.c
+    )
+
+    set(azure_iot_security_sdk_h_files
+        ./inc/iotsecurity_client.h
+    )
+endif()
+
 #this is around for back compat only
 if (${use_prov_client_core})
     set(iothub_client_h_files
@@ -93,34 +109,6 @@ endif()
 set(iothub_client_h_install_files
     ${iothub_client_h_files}
 )
-
-if(${use_security})
-    if (NOT ${use_installed_dependencies})
-        if (NOT TARGET azure_iot_security_sdk)
-            add_subdirectory(../deps/azure-iot-security-sdk azure-iot-security-sdk)
-        endif()
-    else()
-        if (NOT azure_iot_security_sdkFOUND)
-            find_package(azure_iot_security_sdk REQUIRED)
-        endif()
-    endif()
-    
-    include_directories(${AZURE_IOT_SECURITY_SDK_INC_FOLDER})
-
-    set(install_staticlibs ${install_staticlibs}
-        azure_iot_security_sdk
-    )
-
-    set(iothub_client_c_files
-        ${iothub_client_c_files}
-        ./src/iotsecurity_client.c
-    )
-
-    set(iothub_client_h_files
-        ${iothub_client_h_files}
-        ./inc/iotsecurity_client.h
-    )
-endif()
 
 if(${use_http})
     set(install_staticlibs ${install_staticlibs}
@@ -264,7 +252,7 @@ endif()
 #these are the include folders
 #the following "set" statetement exports across the project a global variable called SHARED_UTIL_INC_FOLDER that expands to whatever needs to included when using COMMON library
 
-if(${use_security})
+if(${use_security_module})
     set(IOTSECURITY_CLIENT_INC_FOLDER ${CMAKE_CURRENT_LIST_DIR}/inc CACHE INTERNAL "this is what needs to be included if using iothub_client_http_transport lib" FORCE)
 endif()
 
@@ -308,6 +296,34 @@ IF(WIN32)
         SET_SOURCE_FILES_PROPERTIES(src/iothub_client.c src/iothubtransport.c src/iothub_client_ll.c src/iothubtransporthttp.c src/blob.c PROPERTIES LANGUAGE CXX)
     ENDIF(WINCE)
 ENDIF(WIN32)
+
+set(azure_iot_security_client_source)
+
+if(${use_security_module})
+    include_directories(${AZURE_IOT_SECURITY_SDK_INCLUDES})
+
+    MESSAGE("YYYY ${IOTSECURITY_CLIENT_INC_FOLDER} ${AZURE_IOT_SECURITY_SDK_INC_FOLDER}")
+    include_directories(${IOTSECURITY_CLIENT_INC_FOLDER} ${AZURE_IOT_SECURITY_SDK_INC_FOLDER})
+    add_library(azure_iot_security_client
+        ${azure_iot_security_sdk_c_files}
+        ${azure_iot_security_sdk_h_files}
+    )
+    setSdkTargetBuildProperties(azure_iot_security_client)
+    linkSharedUtil(azure_iot_security_client)
+    linkSecurityModuleLibrary(azure_iot_security_client)
+    set(iothub_client_libs
+        ${iothub_client_libs}
+        azure_iot_security_client
+    )
+
+    if(build_as_dynamic)
+        set(azure_iot_security_client_source ${azure_iot_security_client_source}
+            ${azure_iot_security_sdk_c_files}
+            ${azure_iot_security_sdk_h_files})
+
+        set(iothub_client_libs ${iothub_client_libs} azure_iot_security_sdk)
+    endif(build_as_dynamic)
+endif()
 
 set(iothub_transport_source)
 
@@ -436,11 +452,16 @@ if (${build_as_dynamic})
         set(iothub_def_file ${iothub_def_file} ./src/iothub_edge_modules.def)
     endif()
 
+    if (${use_security_module})
+        set(iothub_def_file ${iothub_def_file} ./src/iotsecurity_sdk.def)
+    endif()
+
     add_library(iothub_client_dll SHARED
         ${iothub_client_c_files}
         ${iothub_client_h_files}
         ${iothub_def_file}
         ${iothub_transport_source}
+        ${azure_iot_security_client_source}
     )
 
     setSdkTargetBuildProperties(iothub_client_dll)
@@ -514,7 +535,6 @@ if(NOT IN_OPENWRT)
 endif()
 
 if(${use_installed_dependencies})
-
     if(NOT DEFINED CMAKE_INSTALL_LIBDIR)
         set(CMAKE_INSTALL_LIBDIR "lib")
     endif()

@@ -25,6 +25,7 @@ no_logging=OFF
 prov_auth=OFF
 prov_use_tpm_simulator=OFF
 use_edge_modules=OFF
+use_security_module=ON
 
 usage ()
 {
@@ -49,7 +50,8 @@ usage ()
     echo " --no-logging                  Disable logging"
     echo " --provisioning                Use Provisioning with Flow"
     echo " --use-tpm-simulator           Build TPM simulator"
-    echo " --use-edge-modules            Build Edge modules"    
+    echo " --use-edge-modules            Build Edge modules"
+    echo " --use-security-module         Build Security module"
     exit 1
 }
 
@@ -59,7 +61,7 @@ process_args ()
     extracloptions=" "
 
     for arg in $*
-    do      
+    do
       if [ $save_next_arg == 1 ]
       then
         # save arg to pass to gcc
@@ -78,7 +80,7 @@ process_args ()
         then
           echo "Supported python versions are 2.7, 3.4 or 3.5 or 3.6"
           exit 1
-        fi 
+        fi
         save_next_arg=0
       elif [ $save_next_arg == 4 ]
       then
@@ -105,6 +107,7 @@ process_args ()
               "--use-tpm-simulator" ) prov_use_tpm_simulator=ON;;
               "--run-sfc-tests" ) run_sfc_tests=ON;;
               "--use-edge-modules") use_edge_modules=ON;;
+              "--use-security-module") use_security_module=ON;;
               * ) usage;;
           esac
       fi
@@ -115,7 +118,7 @@ process_args ()
       toolchainfile=$(readlink -f $toolchainfile)
       toolchainfile="-DCMAKE_TOOLCHAIN_FILE=$toolchainfile"
     fi
-   
+
    if [ "$cmake_install_prefix" != " " ]
    then
      cmake_install_prefix="-DCMAKE_INSTALL_PREFIX=$cmake_install_prefix"
@@ -127,32 +130,32 @@ process_args $*
 rm -r -f $build_folder
 mkdir -p $build_folder
 pushd $build_folder
-cmake $toolchainfile $cmake_install_prefix -Drun_valgrind:BOOL=$run_valgrind -DcompileOption_C:STRING="$extracloptions" -Drun_e2e_tests:BOOL=$run_e2e_tests -Drun_sfc_tests:BOOL=$run-sfc-tests -Drun_longhaul_tests=$run_longhaul_tests -Duse_amqp:BOOL=$build_amqp -Duse_http:BOOL=$build_http -Duse_mqtt:BOOL=$build_mqtt -Ddont_use_uploadtoblob:BOOL=$no_blob -Drun_unittests:BOOL=$run_unittests -Dbuild_python:STRING=$build_python -Dno_logging:BOOL=$no_logging $build_root -Duse_prov_client:BOOL=$prov_auth -Duse_tpm_simulator:BOOL=$prov_use_tpm_simulator -Duse_edge_modules=$use_edge_modules
+cmake $toolchainfile $cmake_install_prefix -Drun_valgrind:BOOL=$run_valgrind -DcompileOption_C:STRING="$extracloptions" -Drun_e2e_tests:BOOL=$run_e2e_tests -Drun_sfc_tests:BOOL=$run-sfc-tests -Drun_longhaul_tests=$run_longhaul_tests -Duse_amqp:BOOL=$build_amqp -Duse_http:BOOL=$build_http -Duse_mqtt:BOOL=$build_mqtt -Ddont_use_uploadtoblob:BOOL=$no_blob -Drun_unittests:BOOL=$run_unittests -Dbuild_python:STRING=$build_python -Dno_logging:BOOL=$no_logging $build_root -Duse_prov_client:BOOL=$prov_auth -Duse_tpm_simulator:BOOL=$prov_use_tpm_simulator -Duse_edge_modules=$use_edge_modules -Duse_security_module=$use_security_module
 
 if [ "$make" = true ]
 then
   # Set the default cores
   MAKE_CORES=$(grep -c ^processor /proc/cpuinfo 2>/dev/null || sysctl -n hw.ncpu)
-  
+
   echo "Initial MAKE_CORES=$MAKE_CORES"
-  
-  # Make sure there is enough virtual memory on the device to handle more than one job  
+
+  # Make sure there is enough virtual memory on the device to handle more than one job
   MINVSPACE="1500000"
-  
+
   # Acquire total memory and total swap space setting them to zero in the event the command fails
   MEMAR=( $(sed -n -e 's/^MemTotal:[^0-9]*\([0-9][0-9]*\).*/\1/p' -e 's/^SwapTotal:[^0-9]*\([0-9][0-9]*\).*/\1/p' /proc/meminfo) )
   [ -z "${MEMAR[0]##*[!0-9]*}" ] && MEMAR[0]=0
   [ -z "${MEMAR[1]##*[!0-9]*}" ] && MEMAR[1]=0
-  
+
   let VSPACE=${MEMAR[0]}+${MEMAR[1]}
-  
+
   echo "VSPACE=$VSPACE"
 
   if [ "$VSPACE" -lt "$MINVSPACE" ] ; then
     echo "WARNING: Not enough space.  Setting MAKE_CORES=1"
     MAKE_CORES=1
   fi
-  
+
   echo "MAKE_CORES=$MAKE_CORES"
   echo "Starting run..."
   date
@@ -160,7 +163,7 @@ then
   echo "completed run..."
   date
 
-  # Only for testing E2E behaviour !!! 
+  # Only for testing E2E behaviour !!!
   TEST_CORES=16
 
   if [[ $run_valgrind == 1 ]] ;

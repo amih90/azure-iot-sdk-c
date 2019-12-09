@@ -23,7 +23,9 @@
 #include "iothub_client_options.h"
 #include "azure_c_shared_utility/tickcounter.h"
 #include "azure_c_shared_utility/agenttime.h"
-
+#ifdef USE_SECURITY_MODULE
+#include "iotsecurity_client.h"
+#endif
 
 #define DO_WORK_FREQ_DEFAULT 1
 
@@ -33,6 +35,9 @@ struct IOTHUB_QUEUE_CONTEXT_TAG;
 typedef struct IOTHUB_CLIENT_CORE_INSTANCE_TAG
 {
     IOTHUB_CLIENT_CORE_LL_HANDLE IoTHubClientLLHandle;
+#ifdef USE_SECURITY_MODULE
+    IOTSECURITY_CLIENT_HANDLE IoTSecurityClientHandle;
+#endif
     TRANSPORT_HANDLE TransportHandle;
     THREAD_HANDLE ThreadHandle;
     LOCK_HANDLE LockHandle;
@@ -1064,6 +1069,24 @@ static IOTHUB_CLIENT_CORE_INSTANCE* create_iothub_instance(CREATE_HUB_INSTANCE_T
                         result->IoTHubClientLLHandle = IoTHubClientCore_LL_CreateFromConnectionString(connectionString, protocol);
                     }
                 }
+
+#ifdef USE_SECURITY_MODULE
+                if (Lock(result->LockHandle) != LOCK_OK)
+                {
+                    LogError("unable to Lock");
+                    result->IoTSecurityClientHandle = NULL;
+                }
+                else
+                {
+                    IOTSECURITY_CLIENT_HANDLE IoTSecurityClientHandle;
+                    result->IoTSecurityClientHandle = IoTSecurityClient_Init((IOTHUB_DEVICE_CLIENT_HANDLE)result);
+                    if (Unlock(result->LockHandle) != LOCK_OK)
+                    {
+                        LogError("unable to Unlock");
+                        result->IoTSecurityClientHandle = NULL;
+                    }
+                }
+#endif
 
                 if (result->IoTHubClientLLHandle == NULL)
                 {
@@ -2707,7 +2730,7 @@ IOTHUB_CLIENT_RESULT IoTHubClientCore_EnablePolicyConfiguration(IOTHUB_CLIENT_CO
     else
     {
         IOTHUB_CLIENT_CORE_INSTANCE* iotHubClientInstance = (IOTHUB_CLIENT_CORE_INSTANCE*)iotHubClientHandle;
-        
+
         /*Codes_SRS_IOTHUBCLIENT_38_001: [ IoTHubClientCore_EnablePolicyConfiguration shall be made thread-safe by using the lock created in IoTHubClient_Create. ]*/
         if (Lock(iotHubClientInstance->LockHandle) != LOCK_OK)
         {
@@ -2812,7 +2835,7 @@ IOTHUB_CLIENT_RESULT IoTHubClientCore_SetStreamRequestCallback(IOTHUB_CLIENT_COR
                 {
                     IOTHUB_QUEUE_CONTEXT* previous_user_context = iotHubClientInstance->stream_user_context;
                     iotHubClientInstance->stream_user_context = (IOTHUB_QUEUE_CONTEXT*)malloc(sizeof(IOTHUB_QUEUE_CONTEXT));
-                    
+
                     if (iotHubClientInstance->stream_user_context == NULL)
                     {
                         LogError("Failed allocating QUEUE_CONTEXT");

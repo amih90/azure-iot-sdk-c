@@ -30,6 +30,7 @@ set CMAKE_run_unittests=OFF
 set prov_auth=OFF
 set prov_use_tpm_simulator=OFF
 set use_edge_modules=OFF
+set use_security_module=OFF
 
 :args-loop
 if "%1" equ "" goto args-done
@@ -41,6 +42,7 @@ if "%1" equ "--run-unittests" goto arg-run-unittests
 if "%1" equ "--provisioning" goto arg-provisioning
 if "%1" equ "--use-tpm-simulator" goto arg-tpm-simulator
 if "%1" equ "--use_edge_modules" goto arg-edge-modules
+if "%1" equ "--use_security_module" goto arg-security-module
 call :usage && exit /b 1
 
 :arg-build-config
@@ -65,7 +67,7 @@ shift
 goto args-continue
 
 :arg-no-logging
-set CMAKE_no_logging=ON 
+set CMAKE_no_logging=ON
 goto args-continue
 
 :arg-run-unittests
@@ -82,6 +84,10 @@ goto args-continue
 
 :arg-edge-modules
 set use_edge_modules=ON
+goto args-continue
+
+:arg-security-module
+set use_security_module=ON
 goto args-continue
 
 :args-continue
@@ -107,11 +113,11 @@ pushd %USERPROFILE%\%cmake-output%
 
 if %build-platform% == Win32 (
 	echo ***Running CMAKE for Win32***
-	cmake %build-root% -Drun_unittests:BOOL=%CMAKE_run_unittests% -Dbuild_python:STRING=%CMAKE_build_python% -Dno_logging:BOOL=%CMAKE_no_logging% -Duse_prov_client:BOOL=%prov_auth% -Duse_tpm_simulator:BOOL=%prov_use_tpm_simulator% -Duse_edge_modules=%use_edge_modules%
+	cmake %build-root% -Drun_unittests:BOOL=%CMAKE_run_unittests% -Dbuild_python:STRING=%CMAKE_build_python% -Dno_logging:BOOL=%CMAKE_no_logging% -Duse_prov_client:BOOL=%prov_auth% -Duse_tpm_simulator:BOOL=%prov_use_tpm_simulator% -Duse_edge_modules=%use_edge_modules% -Duse_security_module=%use_security_modul%
 	if not !ERRORLEVEL!==0 exit /b !ERRORLEVEL!
 ) else (
 	echo ***Running CMAKE for Win64***
-	cmake %build-root% -G "Visual Studio 14 Win64" -Drun_unittests:BOOL=%CMAKE_run_unittests% -Dbuild_python:STRING=%CMAKE_build_python% -Dno_logging:BOOL=%CMAKE_no_logging% -Duse_prov_client:BOOL=%prov_auth% -Duse_tpm_simulator:BOOL=%prov_use_tpm_simulator%  -Duse_edge_modules=%use_edge_modules%
+	cmake %build-root% -G "Visual Studio 14 Win64" -Drun_unittests:BOOL=%CMAKE_run_unittests% -Dbuild_python:STRING=%CMAKE_build_python% -Dno_logging:BOOL=%CMAKE_no_logging% -Duse_prov_client:BOOL=%prov_auth% -Duse_tpm_simulator:BOOL=%prov_use_tpm_simulator% -Duse_edge_modules=%use_edge_modules% -Duse_security_module=%use_security_module%
 	if not !ERRORLEVEL!==0 exit /b !ERRORLEVEL!
 )
 

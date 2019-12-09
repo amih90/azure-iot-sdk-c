@@ -60,7 +60,6 @@ set(use_wolfssl)
 option(use_amqp "set use_amqp to ON if amqp is to be used, set to OFF to not use amqp" ON)
 option(use_http "set use_http to ON if http is to be used, set to OFF to not use http" ON)
 option(use_mqtt "set use_mqtt to ON if mqtt is to be used, set to OFF to not use mqtt" ON)
-option(use_security "set use_security to ON if security is to be used, set to OFF to not use security" ON)
 option(run_e2e_tests "set run_e2e_tests to ON to run e2e tests (default is OFF)" OFF)
 option(run_unittests "set run_unittests to ON to run unittests (default is OFF)" OFF)
 option(run_longhaul_tests "set run_longhaul_tests to ON to run longhaul tests (default is OFF)[if possible, they are always build]" OFF)
@@ -75,6 +74,7 @@ option(build_as_dynamic "build the IoT SDK libaries as dynamic"  OFF)
 option(use_prov_client "Enable provisioning client" OFF)
 option(use_tpm_simulator "tpm simulator type of hsm used with the provisioning client" OFF)
 option(use_edge_modules "Enable support for running modules against Azure IoT Edge" OFF)
+option(use_security_module "Enable security module" ON)
 option(use_custom_heap "use externally defined heap functions instead of the malloc family" OFF)
 option(use_baltimore_cert "set use_baltimore_cert to ON if the Baltimore cert is to be used, set to OFF to not use it" OFF)
 option(use_microsoftazure_de_cert "set use_microsoftazure_de_cert to ON if the MicrosoftAzure DE cert is to be used, set to OFF to not use it" OFF)
@@ -85,10 +85,6 @@ set(compileOption_CXX "" CACHE STRING "passes a string to the command line of th
 set(linkerOption "" CACHE STRING "passes a string to the shared and exe linker options of the C compiler")
 
 set(use_prov_client_core OFF)
-
-if (${use_security})
-    add_definitions(-DUSE_SECURITY)
-endif()
 
 if(${use_custom_heap})
     add_definitions(-DGB_USE_CUSTOM_HEAP)
@@ -139,6 +135,13 @@ if(${use_edge_modules})
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_EDGE_MODULES")
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_EDGE_MODULES")
     set(hsm_type_edge_module ON)
+endif()
+
+if (${use_security_module})
+    add_definitions(-DUSE_SECURITY_MODULE)
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DUSE_SECURITY_MODULE")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DUSE_SECURITY_MODULE")
 endif()
 
 # Set Provisioning Information.  This will also setup appropriate HSM
