@@ -42,7 +42,7 @@ else()
     if(${use_security_module})
         message("tt ${use_security_module}")
 
-        target_link_libraries(iothub_convenience_sample azure_iot_security_client)
+        target_link_libraries(iothub_convenience_sample azure_iot_security_client azure_iot_security_sdk)
         linkSecurityModuleLibrary(iothub_convenience_sample)
         add_definitions(-DUSE_SECURITY_MODULE)
     endif()

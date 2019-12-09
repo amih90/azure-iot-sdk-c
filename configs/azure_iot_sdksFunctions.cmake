@@ -51,6 +51,7 @@ endfunction(getProvSDKVersion)
 
 function(includeSecurityModule)
     include_directories(${AZURE_IOT_SECURITY_SDK_INC_FOLDER})
+    MESSAGE("AZURE_IOT_SECURITY_SDK_INC_FOLDER=${AZURE_IOT_SECURITY_SDK_INC_FOLDER}")
 endfunction(includeSecurityModule)
 
 function(linkSecurityModuleLibrary whatExecutableIsBuilding)
