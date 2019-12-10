@@ -82,8 +82,6 @@ if (use_edge_modules)
 endif()
 
 if(${use_security_module})
-    message("AAAAAAAAAAAAAAAAAAA ${use_security_module}")
-
     set(install_staticlibs ${install_staticlibs}
         azure_iot_security_client
     )
@@ -253,7 +251,7 @@ endif()
 #the following "set" statetement exports across the project a global variable called SHARED_UTIL_INC_FOLDER that expands to whatever needs to included when using COMMON library
 
 if(${use_security_module})
-    set(IOTSECURITY_CLIENT_INC_FOLDER ${CMAKE_CURRENT_LIST_DIR}/inc CACHE INTERNAL "this is what needs to be included if using iothub_client_http_transport lib" FORCE)
+    set(IOTSECURITY_CLIENT_INC_FOLDER ${CMAKE_CURRENT_LIST_DIR}/inc CACHE INTERNAL "this is what needs to be included if using iotsecurity_client lib" FORCE)
 endif()
 
 if(${use_http})
@@ -302,7 +300,6 @@ set(azure_iot_security_client_source)
 if(${use_security_module})
     include_directories(${AZURE_IOT_SECURITY_SDK_INCLUDES})
 
-    MESSAGE("YYYY ${IOTSECURITY_CLIENT_INC_FOLDER} ${AZURE_IOT_SECURITY_SDK_INC_FOLDER}")
     include_directories(${IOTSECURITY_CLIENT_INC_FOLDER} ${AZURE_IOT_SECURITY_SDK_INC_FOLDER})
     add_library(azure_iot_security_client
         ${azure_iot_security_sdk_c_files}
