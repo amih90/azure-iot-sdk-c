@@ -54,8 +54,7 @@ IOTHUB_CLIENT_RESULT IoTSecurityClient_SendEventAsync(IOTSECURITY_CLIENT_HANDLE 
     MESSAGE_RESULT result = Message_GetAsString(&string, message);
     IOTHUB_MESSAGE_HANDLE message_handle = IoTHubMessage_CreateFromString(string);
     IoTHubMessage_SetAsSecurityMessage(message_handle);
-    IoTHubDeviceClient_SendEventAsync(iotsecurity_client_handle->device_client_handle, message_handle, IoTSecurityClient_EventConfirmationCallback, NULL);
-
+    // IOTHUB_CLIENT_RESULT iothub_client_result = IoTHubDeviceClient_SendEventAsync(iotsecurity_client_handle->device_client_handle, message_handle, IoTSecurityClient_EventConfirmationCallback, NULL);
 }
 
 void IoTSecurityClient_EventConfirmationCallback(IOTHUB_CLIENT_CONFIRMATION_RESULT result, void* context) {
